@@ -37,7 +37,7 @@
 - Заполните базу данных
 - С помощью команды ниже создайте дамп базы данных
 ```shell 
-python -Xutf8 manage.py dumpdata -o db.json 
+python -Xutf8 manage.py dumpdata -o db_test.json 
 ``` 
 - Запустите тесты с помощью команды `python manage.py tests`.
 
