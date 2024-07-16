@@ -1,7 +1,7 @@
 import ast
 from datetime import timedelta
 
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, F
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -33,7 +33,7 @@ class OperationAPIView(APIView):
         for i in account:
             amount = Operation.objects.filter(
                 account_id=i['account_id'],
-                date__lte=i['date'] + timedelta(days=1)
+                date__lte=i['date']
             ).aggregate(Sum('amount'))['amount__sum']
             i['account_balance'] = amount
 
@@ -68,9 +68,10 @@ class OperationAPIView(APIView):
             date=request.data['date'],
             amount=request.data['amount']
         )
-        old_balance = BankAccount.objects.get(id=request.data['account']).balance
-        account = BankAccount.objects.filter(id=request.data['account'])
-        account.update(balance=int(old_balance) + int(request.data['amount']))
+
+        old_balance = BankAccount.objects.get(id=request.data['account'])
+        old_balance.balance = F('balance') + float(request.data['amount'])
+        old_balance.save()
 
         return Response(OperationSerializer(operation).data)
 
@@ -78,9 +79,9 @@ class OperationAPIView(APIView):
         """Удаление операции"""
         operation = get_object_or_404(Operation.objects.all(), id=id)
 
-        old_balance = Operation.objects.get(id=id).account.balance
-        account_update = BankAccount.objects.filter(name=operation.account)
-        account_update.update(balance=int(old_balance) - int(operation.amount))
+        old_balance = Operation.objects.get(id=id).account
+        old_balance.balance = F('balance') - float(operation.amount)
+        old_balance.save()
 
         operation.delete()
 
